@@ -104,6 +104,8 @@ export function createShop(callExtension, { loginUrl } = {}) {
 
   const euroAmounts = (text) => [...(text || "").matchAll(/(\d+(?:[.,]\d{2}))\s*€/g)].map((m) => num(m[1]));
   const text = (el) => (el ? el.text.replace(/\s+/g, " ").trim() : null);
+  // Produktbild ohne Größen-/Policy-Parameter (z.B. ?imwidth=304&impolicy=search)
+  const cleanImageUrl = (url) => (url ? url.split("?")[0] : null);
 
   function parseTile(tile) {
     const id = tile.id.match(/(\d+)$/)?.[1] ?? tile.id;
@@ -112,6 +114,7 @@ export function createShop(callExtension, { loginUrl } = {}) {
     const grammage = text(tile.querySelector('[id$="-grammage"]'));
     const offer = text(tile.querySelector('[id$="-discount-text"]'));
     const link = tile.querySelector("a[href*='/shop/p/']")?.getAttribute("href");
+    const img = tile.querySelector("img[src*='rewe-static.de'], img[data-src*='rewe-static.de']");
 
     let tracking = {};
     try {
@@ -151,6 +154,7 @@ export function createShop(callExtension, { loginUrl } = {}) {
       unitBase: unit?.base ?? null,
       available,
       url: link ? `https://www.rewe.de${link}` : null,
+      imageUrl: cleanImageUrl(img?.getAttribute("src") || img?.getAttribute("data-src")),
     };
   }
 
@@ -191,7 +195,7 @@ export function createShop(callExtension, { loginUrl } = {}) {
 
   const TILE_SELECTOR = 'ul.plrProductGrid > li > div[id^="plr-"][class*="product-tile"]';
 
-  async function search({ query, sort = "unit_price", limit = 15, pages = 3, onlyOffers = false }) {
+  async function search({ query, sort = "unit_price", limit = 15, pages = 3, onlyOffers = false, includeImages = false }) {
     // Bei Preissortierung REWE vorsortieren lassen, damit günstige Produkte schon auf den
     // ersten Seiten liegen (nach Relevanz landen z.B. ja!-Produkte oft erst auf Seite 2+).
     const sorting = sort === "relevance" ? "" : "&sorting=PRICE_ASC";
@@ -221,6 +225,7 @@ export function createShop(callExtension, { loginUrl } = {}) {
     }
 
     if (onlyOffers) products = products.filter((p) => p.offer);
+    if (!includeImages) for (const p of products) delete p.imageUrl;
     const cmp = (key) => (a, b) => (a[key] == null ? (b[key] == null ? 0 : 1) : b[key] == null ? -1 : a[key] - b[key]);
     if (sort === "unit_price") products.sort(cmp("unitPriceEur"));
     else if (sort === "price") products.sort(cmp("priceEur"));
@@ -371,7 +376,7 @@ export function createShop(callExtension, { loginUrl } = {}) {
     return { total: list.length, offset, orders: list.slice(offset, offset + limit).map(historyEntry) };
   }
 
-  function orderItem(li) {
+  function orderItem(li, includeImages = false) {
     const weight = li.volumeCode === "KGG";
     const actual = typeof li.actualAmount === "number" ? li.actualAmount : null;
     return {
@@ -383,10 +388,11 @@ export function createShop(callExtension, { loginUrl } = {}) {
       deliveredWeightG: weight ? actual : null,
       unitPriceEur: eur(li.price),
       totalPriceEur: eur(typeof li.actualTotalPrice === "number" ? li.actualTotalPrice : li.totalPrice),
+      imageUrl: includeImages ? cleanImageUrl(li.imageUrl || li.listing?._embedded?.product?.imageUrl) : undefined,
     };
   }
 
-  async function order({ orderId }, historyCache) {
+  async function order({ orderId, includeImages = false }, historyCache) {
     const data = await getJson(`/shop/api/orders/${encodeURIComponent(orderId)}`, "REWE-Bestellung");
     const subs = data.subOrders || [];
     const sub = subs[0] || {};
@@ -401,7 +407,7 @@ export function createShop(callExtension, { loginUrl } = {}) {
       .flatMap((s) => s.lineItems || [])
       .filter((li) => li.lineItemType === "PRODUCT")
       .sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0))
-      .map(orderItem);
+      .map((li) => orderItem(li, includeImages));
     return {
       orderId: data.orderId ?? orderId,
       orderDate: isoDate(data.orderDate),

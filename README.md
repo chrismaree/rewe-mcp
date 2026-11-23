@@ -12,13 +12,13 @@ Bestellen und bezahlen kann der Server bewusst **nicht**. Den Einkauf schließt 
 
 | Tool | Was es macht |
 |---|---|
-| `rewe_search_products` | Produktsuche mit Preis, **Grundpreis (€/kg bzw. €/l)**, Verfügbarkeit und Angeboten (Normalpreis, Rabatt). Standardmäßig nach dem günstigsten Grundpreis sortiert, optional nur Angebote. |
+| `rewe_search_products` | Produktsuche mit Preis, **Grundpreis (€/kg bzw. €/l)**, Verfügbarkeit und Angeboten (Normalpreis, Rabatt). Standardmäßig nach dem günstigsten Grundpreis sortiert, optional nur Angebote. Optional mit Produktbild (`includeImages`). |
 | `rewe_get_product` | Details und Verfügbarkeit im gewählten Markt |
 | `rewe_get_cart` | Warenkorb mit Warenwert, Pfand, Servicegebühr, Mindestbestellwert |
 | `rewe_add_to_cart` | Produkt hinzufügen (Menge erhöhen) |
 | `rewe_set_cart_quantity` | Menge setzen, `0` entfernt das Produkt |
 | `rewe_get_order_history` | Bisherige Bestellungen (Datum, Abholung, Summe, Vorschau) |
-| `rewe_get_order` | Einzelne Bestellung mit allen Artikeln, inkl. tatsächlich gelieferter Menge bzw. Gewicht |
+| `rewe_get_order` | Einzelne Bestellung mit allen Artikeln, inkl. tatsächlich gelieferter Menge bzw. Gewicht; optional mit Produktbild (`includeImages`) |
 | `rewe_get_frequent_products` | Häufig gekaufte Produkte über die letzten Bestellungen, ideal für „das Übliche“ |
 | `rewe_get_pickup_slots` | Freie Abholzeitfenster (nur lesend) |
 | `rewe_login_status` | Ist der Server bei REWE angemeldet? |
