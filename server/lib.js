@@ -133,7 +133,8 @@ export function registerTools(server, callExtension, { loginStatus } = {}) {
       description:
         "Sucht Produkte im REWE Onlineshop (Markt aus der Chrome-Sitzung des Nutzers). " +
         "Pro Produkt: productId, title, priceEur, regularPriceEur (nur bei Angeboten), offer, grammage, " +
-        "unitPriceEur/unitBase (Grundpreis €/kg bzw. €/l), available (im Markt bestellbar). " +
+        "unitPriceEur/unitBase (Grundpreis €/kg bzw. €/l), available (im Markt bestellbar), " +
+        "mit includeImages zusätzlich imageUrl (Produktbild). " +
         "Standardmäßig nach dem günstigsten Grundpreis sortiert.",
       inputSchema: {
         query: z.string().min(1).describe("Suchbegriff, z.B. 'Spaghetti' oder 'Vollmilch'"),
@@ -144,6 +145,7 @@ export function registerTools(server, callExtension, { loginStatus } = {}) {
         limit: z.number().int().min(1).max(50).default(15).describe("Max. Anzahl zurückgegebener Produkte"),
         pages: z.number().int().min(1).max(15).default(3).describe("Wie viele Ergebnisseiten (à ~40 Produkte) durchsucht werden"),
         onlyOffers: z.boolean().default(false).describe("Nur Angebote zurückgeben"),
+        includeImages: z.boolean().default(false).describe("Pro Produkt imageUrl (Produktbild) mitliefern"),
       },
     },
     (args) => run(shop.search, args)
@@ -217,8 +219,11 @@ export function registerTools(server, callExtension, { loginStatus } = {}) {
       title: "REWE-Bestellung im Detail",
       description:
         "Alle Produkte einer Bestellung mit quantity (bestellt), deliveredQuantity (geliefert; 0 = nicht geliefert), " +
-        "deliveredWeightG (bei Gewichtsware), unitPriceEur und totalPriceEur.",
-      inputSchema: { orderId: z.string().describe("Bestell-ID aus rewe_get_order_history, z.B. B-ABC-DEF-GHI") },
+        "deliveredWeightG (bei Gewichtsware), unitPriceEur und totalPriceEur; mit includeImages zusätzlich imageUrl.",
+      inputSchema: {
+        orderId: z.string().describe("Bestell-ID aus rewe_get_order_history, z.B. B-ABC-DEF-GHI"),
+        includeImages: z.boolean().default(false).describe("Pro Artikel imageUrl (Produktbild) mitliefern"),
+      },
     },
     (args) => run(shop.order, args)
   );
